@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Portal - vZoom{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 30px;">
+    <h1 style="font-size: 28px; font-weight: 600;">Admin Dashboard</h1>
+    <p style="color: var(--text-secondary); margin-top: 4px;">Platform analytics, user management, and system monitoring.</p>
+</div>
+
+<!-- Analytics Overview Cards -->
+<div class="admin-grid">
+    <div class="dashboard-card glass analytics-card">
+        <span style="font-size: 14px; color: var(--text-secondary); font-weight: 500;">Active Meetings</span>
+        <span class="analytics-num">{{ active_meetings_count }}</span>
+        <span style="font-size: 12px; color: var(--accent-success);"><i class="fa-solid fa-signal"></i> Live Now</span>
+    </div>
+    
+    <div class="dashboard-card glass analytics-card">
+        <span style="font-size: 14px; color: var(--text-secondary); font-weight: 500;">Active Participants</span>
+        <span class="analytics-num">{{ total_active_participants }}</span>
+        <span style="font-size: 12px; color: var(--accent-primary);"><i class="fa-solid fa-users"></i> Connected peers</span>
+    </div>
+
+    <div class="dashboard-card glass analytics-card">
+        <span style="font-size: 14px; color: var(--text-secondary); font-weight: 500;">Total Users</span>
+        <span class="analytics-num">{{ total_users }}</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">Registered accounts</span>
+    </div>
+
+    <div class="dashboard-card glass analytics-card">
+        <span style="font-size: 14px; color: var(--text-secondary); font-weight: 500;">Total Calls Created</span>
+        <span class="analytics-num">{{ total_meetings }}</span>
+        <span style="font-size: 12px; color: var(--text-secondary);">All-time sessions</span>
+    </div>
+</div>
+
+<div class="admin-tables-grid">
+    <!-- Active Meetings Monitoring -->
+    <div class="dashboard-card glass admin-table-container">
+        <h3 class="card-title">
+            <span><i class="fa-solid fa-satellite-dish" style="color: var(--accent-success); margin-right: 10px;"></i> Active Meetings</span>
+            <span class="badge badge-live">{{ active_meetings_count }} Active</span>
+        </h3>
+        
+        <div style="overflow-x: auto;">
+            {% if active_meetings %}
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Title / ID</th>
+                            <th>Host</th>
+                            <th>Peers</th>
+                            <th>Waiting</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in active_meetings %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.meeting.title }}</strong>
+                                    <div style="font-size: 11px; color: var(--text-secondary);">ID: {{ item.meeting.meeting_id }}</div>
+                                </td>
+                                <td>{{ item.meeting.host.username }}</td>
+                                <td>
+                                    <span style="color: var(--accent-success); font-weight: bold;">{{ item.participants_count }}</span>
+                                    <div style="font-size: 11px; color: var(--text-secondary); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{% if item.active_names %}{{ item.active_names|join:', ' }}{% else %}None{% endif %}">
+                                        {% if item.active_names %}
+                                            {{ item.active_names|join:", " }}
+                                        {% else %}
+                                            <span style="font-style: italic; opacity: 0.5;">None</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span style="font-weight: bold;">{{ item.waiting_count }}</span>
+                                    <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px;">
+                                        {% if item.waiting_participants_details %}
+                                            {% for wp in item.waiting_participants_details %}
+                                                <div style="display: flex; align-items: center; gap: 6px; font-size: 11px;">
+                                                    <span style="color: var(--text-secondary);">{{ wp.username }}</span>
+                                                    <form action="{% url 'admin_dashboard' %}" method="POST" style="display: inline; margin: 0;">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="action" value="admit_user">
+                                                        <input type="hidden" name="meeting_id" value="{{ item.meeting.meeting_id }}">
+                                                        <input type="hidden" name="user_id" value="{{ wp.user_id }}">
+                                                        <button type="submit" class="btn btn-success" style="padding: 2px 6px; font-size: 9px; border-radius: 4px; font-weight: bold; gap: 0;">Admit</button>
+                                                    </form>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <span style="font-size: 11px; color: var(--text-secondary); font-style: italic; opacity: 0.5;">None</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <a href="{% url 'room' meeting_id=item.meeting.meeting_id %}" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;">
+                                        Join
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                    <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 28px; margin-bottom: 12px; opacity: 0.5;"></i>
+                    <p>No active meeting sessions currently run on the server.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- User Accounts Management -->
+    <div class="dashboard-card glass admin-table-container">
+        <h3 class="card-title">
+            <span><i class="fa-solid fa-users-gear" style="color: var(--accent-primary); margin-right: 10px;"></i> User Management</span>
+        </h3>
+
+        <div style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                        <tr>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div class="avatar" style="width: 30px; height: 30px; font-size: 12px; background-color: {{ u.profile.avatar_color }};">
+                                        {{ u.username|slice:":2" }}
+                                    </div>
+                                    <div>
+                                        <strong>{{ u.username }}</strong>
+                                        {% if u.is_staff %}<div style="font-size: 9px; color: var(--accent-warning); font-weight: bold; text-transform: uppercase;">Staff</div>{% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ u.email }}</td>
+                            <td>
+                                {% if u.is_active %}
+                                    <span class="badge badge-live" style="font-size: 9px; padding: 2px 6px;">Active</span>
+                                {% else %}
+                                    <span class="badge badge-ended" style="font-size: 9px; padding: 2px 6px; background-color: rgba(239, 68, 68, 0.15); color: var(--accent-danger); border-color: rgba(239, 68, 68, 0.2);">Blocked</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if u != request.user %}
+                                    <form action="{% url 'admin_dashboard' %}" method="POST" style="display: inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="toggle_block">
+                                        <input type="hidden" name="user_id" value="{{ u.id }}">
+                                        {% if u.is_active %}
+                                            <button type="submit" class="btn btn-danger" style="padding: 6px 12px; font-size: 11px;">Block</button>
+                                        {% else %}
+                                            <button type="submit" class="btn btn-success" style="padding: 6px 12px; font-size: 11px;">Unblock</button>
+                                        {% endif %}
+                                    </form>
+                                {% else %}
+                                    <span style="font-size: 11px; color: var(--text-secondary); font-style: italic;">Self (Host)</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-card glass" style="margin-top: 30px;">
+    <h3 class="card-title">Recent Meetings Creation Log</h3>
+    <div style="overflow-x: auto;">
+        <table class="admin-table" style="margin-top: 5px;">
+            <thead>
+                <tr>
+                    <th>Meeting Title</th>
+                    <th>Meeting ID</th>
+                    <th>Host Username</th>
+                    <th>Waiting Room</th>
+                    <th>Password</th>
+                    <th>Created At</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in recent_meetings %}
+                    <tr>
+                        <td><strong>{{ m.title }}</strong></td>
+                        <td><code>{{ m.meeting_id }}</code></td>
+                        <td>{{ m.host.username }}</td>
+                        <td>{% if m.is_waiting_room %}<i class="fa-solid fa-circle-check" style="color: var(--accent-success);"></i> Yes{% else %}No{% endif %}</td>
+                        <td>{% if m.password %}<i class="fa-solid fa-lock" style="color: var(--accent-warning);"></i> Set{% else %}None{% endif %}</td>
+                        <td>{{ m.created_at|date:"M d, Y - H:i" }}</td>
+                        <td>
+                            {% if m.is_active %}
+                                <span class="badge badge-live" style="font-size: 10px;">Active / Ready</span>
+                            {% else %}
+                                <span class="badge badge-ended" style="font-size: 10px;">Ended</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

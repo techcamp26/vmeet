@@ -1,0 +1,181 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Video Conference{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Toast Notifications -->
+    <div class="alerts-container" id="alerts-container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="toast {% if message.tags == 'success' %}toast-success{% elif message.tags == 'error' %}toast-error{% else %}toast-info{% endif %}">
+                    <i class="fa-solid {% if message.tags == 'success' %}fa-circle-check{% elif message.tags == 'error' %}fa-circle-exclamation{% else %}fa-circle-info{% endif %}"></i>
+                    <span>{{ message }}</span>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    {% block body %}
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <i class="fa-solid fa-video" style="color: var(--accent-primary);"></i>
+                <span>vZoom</span>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li class="sidebar-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <a href="{% url 'dashboard' %}">
+                        <i class="fa-solid fa-house"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                {% if request.user.is_staff %}
+                <li class="sidebar-item {% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+                    <a href="{% url 'admin_dashboard' %}">
+                        <i class="fa-solid fa-chart-pie"></i>
+                        <span>Admin Portal</span>
+                    </a>
+                </li>
+                {% endif %}
+                <li class="sidebar-item">
+                    <a href="#" onclick="openProfileModal(event)">
+                        <i class="fa-solid fa-user-gear"></i>
+                        <span>Settings</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-profile">
+                <div class="avatar" style="background-color: {{ request.user.profile.avatar_color }};">
+                    {{ request.user.username|slice:":2" }}
+                </div>
+                <div class="profile-info">
+                    <div class="profile-name">{{ request.user.username }}</div>
+                    <div class="profile-role">
+                        {% if request.user.is_staff %}Administrator{% else %}Member{% endif %}
+                    </div>
+                </div>
+                <a href="{% url 'logout' %}" title="Logout" style="color: var(--text-secondary); margin-left: auto;">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Dashboard Viewport -->
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- User Profile Settings Modal -->
+    <div class="modal-backdrop" id="profile-modal-backdrop">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h3>Account Settings</h3>
+                <span class="modal-close" onclick="closeProfileModal()">&times;</span>
+            </div>
+            <form action="{% url 'dashboard' %}" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_profile">
+                
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" class="form-control" value="{{ request.user.username }}" disabled>
+                </div>
+                
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" name="email" class="form-control" value="{{ request.user.email }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Short Bio</label>
+                    <textarea name="bio" class="form-control" rows="3" placeholder="Tell us about yourself...">{{ request.user.profile.bio }}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Avatar Accent Color</label>
+                    <input type="hidden" name="avatar_color" id="selected-avatar-color" value="{{ request.user.profile.avatar_color }}">
+                    <div class="color-picker">
+                        {% for color in profile_colors %}
+                        <div class="color-option {% if color == request.user.profile.avatar_color %}active{% endif %}" 
+                             style="background-color: {{ color }};" 
+                             onclick="selectAvatarColor('{{ color }}', this)"></div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeProfileModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endblock %}
+
+    <script>
+        // Auto fade out toast alerts
+        document.addEventListener('DOMContentLoaded', () => {
+            const toasts = document.querySelectorAll('.toast');
+            toasts.forEach(toast => {
+                setTimeout(() => {
+                    toast.style.transform = 'translateX(120%)';
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'all 0.5s ease';
+                    setTimeout(() => toast.remove(), 500);
+                }, 4000);
+            });
+        });
+
+        // Profile Modal Actions
+        function openProfileModal(e) {
+            if (e) e.preventDefault();
+            document.getElementById('profile-modal-backdrop').classList.add('active');
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profile-modal-backdrop').classList.remove('active');
+        }
+
+        function selectAvatarColor(color, el) {
+            document.getElementById('selected-avatar-color').value = color;
+            document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        // Global Alert Helper
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('alerts-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            let icon = 'fa-circle-info';
+            if (type === 'success') icon = 'fa-circle-check';
+            if (type === 'error') icon = 'fa-circle-exclamation';
+            
+            toast.innerHTML = `
+                <i class="fa-solid ${icon}"></i>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transform = 'translateX(120%)';
+                toast.style.opacity = '0';
+                toast.style.transition = 'all 0.5s ease';
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

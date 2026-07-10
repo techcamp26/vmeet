@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - vZoom{% endblock %}
+
+{% block body %}
+<div class="auth-wrapper">
+    <div class="auth-card glass">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="fa-solid fa-video"></i> vZoom
+            </div>
+            <div class="auth-subtitle">Create your account to start meetings</div>
+        </div>
+
+        <form method="POST" action="{% url 'register' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" name="username" id="username" class="form-control" placeholder="Choose a username" required autocomplete="username">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" name="email" id="email" class="form-control" placeholder="name@example.com" required autocomplete="email">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" name="password" id="password" class="form-control" placeholder="Create password" required autocomplete="new-password">
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" name="confirm_password" id="confirm_password" class="form-control" placeholder="Verify password" required autocomplete="new-password">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px;">Register Account</button>
+        </form>
+
+        <div class="form-footer">
+            Already have an account? <a href="{% url 'login' %}">Sign In</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

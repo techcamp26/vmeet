@@ -1,0 +1,227 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ meeting.title }} - vZoom Meeting</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #030508; overflow: hidden; }
+    </style>
+</head>
+<body>
+
+    <!-- Toast Alerts inside Room -->
+    <div class="alerts-container" id="alerts-container"></div>
+
+    <!-- Waiting Room Overlay -->
+    {% if not is_host and meeting.is_waiting_room %}
+    <div class="waiting-screen" id="waiting-overlay">
+        <div class="waiting-spinner"></div>
+        <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 8px;">Waiting Room</h2>
+        <p style="color: var(--text-secondary); text-align: center; max-width: 400px; padding: 0 20px;">
+            Please wait, the host will let you in soon.
+        </p>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="margin-top: 24px;">Leave Meeting</a>
+    </div>
+    {% endif %}
+
+    <div class="room-container">
+        <!-- Room Header -->
+        <header class="room-header glass">
+            <div class="room-title-info">
+                <i class="fa-solid fa-video" style="color: var(--accent-primary); font-size: 20px;"></i>
+                <h2 style="font-size: 18px; font-weight: 600;">{{ meeting.title }}</h2>
+                <span class="badge {% if meeting.is_active %}badge-live{% else %}badge-ended{% endif %}">
+                    {% if meeting.is_active %}Live{% else %}Ended{% endif %}
+                </span>
+            </div>
+            
+            <div style="display: flex; gap: 15px; align-items: center;">
+                {% if user.is_staff %}
+                <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px; border-radius: 8px; gap: 6px;" target="_blank">
+                    <i class="fa-solid fa-chart-pie" style="color: var(--accent-warning);"></i> Admin Portal
+                </a>
+                {% endif %}
+                <div class="room-id-badge" onclick="navigator.clipboard.writeText('{{ request.META.HTTP_HOST }}/meeting/{{ meeting.meeting_id }}/'); showToast('Invite link copied!', 'success')">
+                    <i class="fa-solid fa-link"></i>
+                    <span>ID: <strong>{{ meeting.meeting_id }}</strong></span>
+                </div>
+                <div style="font-size: 13px; color: var(--text-secondary);">
+                    Logged as: <strong>{{ user.username }}</strong>
+                </div>
+            </div>
+        </header>
+
+        <!-- Room Main viewport -->
+        <main class="room-main">
+            <!-- Video Grid Area -->
+            <div class="video-grid-container">
+                <div class="video-grid" id="video-grid">
+                    <!-- Local stream -->
+                    <div class="video-wrapper host-border" id="local-video-wrapper">
+                        <video id="local-video" autoplay playsinline muted></video>
+                        <div class="video-label">
+                            <i class="fa-solid fa-circle-user" style="color: var(--accent-primary);"></i>
+                            <span>You (Host)</span>
+                        </div>
+                        <div class="video-status-icons">
+                            <div class="status-icon-badge" id="local-mic-status-icon" style="display: none;">
+                                <i class="fa-solid fa-microphone-slash"></i>
+                            </div>
+                        </div>
+                        <!-- Camera Off Placeholder -->
+                        <div class="video-placeholder" id="local-video-placeholder" style="display: none;">
+                            <div class="avatar" style="background-color: {{ user.profile.avatar_color }};">
+                                {{ user.username|slice:":2" }}
+                            </div>
+                            <span style="font-size: 14px; font-weight: 500;">{{ user.username }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat & Participant Sidebar Panel -->
+            <div class="room-sidebar glass" id="room-sidebar">
+                <div class="sidebar-tab-header">
+                    <div class="sidebar-tab active" id="chat-tab-btn" onclick="toggleSidebarTab('chat')">
+                        <i class="fa-solid fa-message"></i> Chat
+                    </div>
+                    <div class="sidebar-tab" id="participants-tab-btn" onclick="toggleSidebarTab('participants')">
+                        <i class="fa-solid fa-users"></i> Participants (<span id="participant-count-badge">1</span>)
+                    </div>
+                </div>
+
+                <!-- Chat Panel -->
+                <div class="tab-content active" id="chat-panel">
+                    <div class="chat-messages" id="chat-messages-container">
+                        <!-- System notice -->
+                        <div style="text-align: center; color: var(--text-secondary); font-size: 11px; margin: 10px 0;">
+                            Welcome to the meeting chat. Messages are encrypted peer-to-peer.
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <div style="display: flex; flex-direction: column; width: 100%; gap: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 11px; color: var(--text-secondary);">Send to:</span>
+                                <select id="chat-target" style="padding: 2px 6px; font-size: 11px;">
+                                    <option value="everyone">Everyone</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="chat-input" class="form-control" placeholder="Type a message..." style="padding: 10px;" onkeydown="if(event.key==='Enter') sendChatMessage()">
+                                <button class="btn btn-primary" style="padding: 10px 14px;" onclick="sendChatMessage()">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Participants Panel -->
+                <div class="tab-content" id="participants-panel">
+                    <!-- Host Only: Waiting Room Requests -->
+                    {% if is_host %}
+                    <div id="host-waiting-room-section" style="display: none; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 15px;">
+                        <h4 style="font-size: 14px; font-weight: 600; color: var(--accent-warning); margin-bottom: 10px;">
+                            <i class="fa-solid fa-circle-exclamation"></i> Waiting Room Requests
+                        </h4>
+                        <div id="waiting-requests-list" style="display: flex; flex-direction: column; gap: 8px;">
+                            <!-- Waiting list dynamically generated in JS -->
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <h4 style="font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px;">Active Participants</h4>
+                    <div class="room-participants-list" id="active-participants-list">
+                        <!-- Self row -->
+                        <div class="participant-row">
+                            <div class="participant-meta">
+                                <div class="avatar" style="width: 28px; height: 28px; font-size: 11px; background-color: {{ user.profile.avatar_color }};">
+                                    {{ user.username|slice:":2" }}
+                                </div>
+                                <span style="font-size: 13px;"><strong>{{ user.username }}</strong> (You)</span>
+                            </div>
+                            <div style="display: flex; gap: 8px; font-size: 12px; color: var(--text-secondary);">
+                                <i class="fa-solid fa-microphone" id="self-mic-status-label"></i>
+                                <i class="fa-solid fa-video" id="self-video-status-label"></i>
+                            </div>
+                        </div>
+                        <!-- Peer rows dynamically generated in JS -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Room Footer controls toolbar -->
+        <footer class="room-footer glass">
+            <!-- Left Info -->
+            <div class="controls-group">
+                <button class="btn btn-secondary" onclick="navigator.clipboard.writeText('{{ request.META.HTTP_HOST }}/meeting/{{ meeting.meeting_id }}/'); showToast('Link copied!', 'success')">
+                    <i class="fa-solid fa-share-nodes"></i> Invite Link
+                </button>
+            </div>
+
+            <!-- Center Call Toggles -->
+            <div class="controls-group">
+                <button class="control-btn" id="mic-btn" onclick="toggleMuteAudio()" title="Mute Microphone">
+                    <i class="fa-solid fa-microphone"></i>
+                </button>
+                <button class="control-btn" id="camera-btn" onclick="toggleDisableVideo()" title="Turn Camera Off">
+                    <i class="fa-solid fa-video"></i>
+                </button>
+                <button class="control-btn" id="screen-btn" onclick="toggleScreenShare()" title="Share Screen">
+                    <i class="fa-solid fa-desktop"></i>
+                </button>
+                <button class="control-btn" id="record-btn" onclick="toggleRecording()" title="Record Meeting">
+                    <i class="fa-solid fa-circle" style="color: #ef4444;"></i>
+                </button>
+                <button class="control-btn" id="participants-btn" onclick="toggleParticipantsList()" title="Participants">
+                    <i class="fa-solid fa-users"></i>
+                </button>
+                
+                <!-- Host-Only Meeting controls -->
+                {% if is_host %}
+                    <button class="control-btn" id="lock-btn" onclick="toggleMeetingLock()" title="Lock Meeting">
+                        <i class="fa-solid fa-unlock"></i>
+                    </button>
+                {% endif %}
+                
+                <!-- Danger Area: Leave Call -->
+                <button class="control-btn active" id="leave-btn" onclick="leaveMeeting()" title="Leave Meeting" style="margin-left: 10px;">
+                    <i class="fa-solid fa-phone-slash"></i>
+                </button>
+                
+                {% if is_host %}
+                    <button class="btn btn-danger" id="end-btn" onclick="endMeetingForAll()" style="padding: 10px 14px; border-radius: 50px; font-size: 13px;" title="End Call For All">
+                        End for All
+                    </button>
+                {% endif %}
+            </div>
+
+            <!-- Right Toolbar widgets (Sidebar Toggles) -->
+            <div class="controls-group">
+                <button class="control-btn" id="sidebar-toggle-btn" onclick="toggleRoomSidebar()" title="Toggle Sidebar">
+                    <i class="fa-solid fa-comments"></i>
+                </button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Core meeting room configuration globals for JS script -->
+    <script>
+        window.ZOOM_CONFIG = {
+            meetingId: "{{ meeting.meeting_id }}",
+            userId: {{ user.id }},
+            username: "{{ user.username }}",
+            isHost: {{ is_host|yesno:"true,false" }},
+            waitingRoomEnabled: {{ meeting.is_waiting_room|yesno:"true,false" }},
+            wsScheme: window.location.protocol === 'https:' ? 'wss://' : 'ws://',
+            csrfToken: "{{ csrf_token }}"
+        };
+    </script>
+    <script src="{% static 'js/room.js' %}"></script>
+</body>
+</html>
