@@ -163,7 +163,7 @@
             <!-- Left Info -->
             <div class="controls-group">
                 <button class="btn btn-secondary" onclick="navigator.clipboard.writeText('{{ request.META.HTTP_HOST }}/meeting/{{ meeting.meeting_id }}/'); showToast('Link copied!', 'success')">
-                    <i class="fa-solid fa-share-nodes"></i> Invite Link
+                    <i class="fa-solid fa-share-nodes"></i> <span class="btn-text">Invite Link</span>
                 </button>
             </div>
 
@@ -199,7 +199,7 @@
                 
                 {% if is_host %}
                     <button class="btn btn-danger" id="end-btn" onclick="endMeetingForAll()" style="padding: 10px 14px; border-radius: 50px; font-size: 13px;" title="End Call For All">
-                        End for All
+                        <i class="fa-solid fa-power-off"></i> <span class="btn-text">End for All</span>
                     </button>
                 {% endif %}
             </div>

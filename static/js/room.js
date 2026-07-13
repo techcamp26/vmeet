@@ -396,22 +396,30 @@ function recalculateVideoLayout() {
     const videoGrid = document.getElementById('video-grid');
     const wrappers = videoGrid.getElementsByClassName('video-wrapper');
     const count = wrappers.length;
+    const isMobile = window.innerWidth <= 768;
     
-    if (count === 1) {
-        wrappers[0].style.maxWidth = '80%';
-        wrappers[0].style.flexBasis = '80%';
-    } else if (count === 2) {
-        for (let w of wrappers) {
-            w.style.maxWidth = '45%';
-            w.style.flexBasis = '45%';
-        }
-    } else {
-        for (let w of wrappers) {
-            w.style.maxWidth = '30%';
-            w.style.flexBasis = '30%';
+    for (let w of wrappers) {
+        if (isMobile) {
+            // Reset flex and width inline styles so CSS grid takes full control
+            w.style.maxWidth = '';
+            w.style.flexBasis = '';
+        } else {
+            if (count === 1) {
+                w.style.maxWidth = '80%';
+                w.style.flexBasis = '80%';
+            } else if (count === 2) {
+                w.style.maxWidth = '45%';
+                w.style.flexBasis = '45%';
+            } else {
+                w.style.maxWidth = '30%';
+                w.style.flexBasis = '30%';
+            }
         }
     }
 }
+
+// Recalculate on screen resize to keep grid synchronized
+window.addEventListener('resize', recalculateVideoLayout);
 
 // --------------------- Chat Operations ---------------------
 

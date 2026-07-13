@@ -492,7 +492,7 @@ body {
 
 /* Room UI - Full Screen layout */
 .room-container {
-    height: 100vh;
+    height: 100dvh;
     display: grid;
     grid-template-rows: 60px 1fr 80px;
     background-color: #05070a;
@@ -1136,27 +1136,33 @@ table.admin-table td {
     /* WebRTC Meeting Room */
     .room-container {
         grid-template-rows: auto 1fr auto;
-        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
     }
 
     .room-header {
-        padding: 10px 15px;
-        flex-direction: column;
-        gap: 10px;
-        align-items: flex-start;
-    }
-    
-    .room-header-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        width: 100%;
+        padding: 8px 12px;
+        flex-direction: row;
+        gap: 8px;
         align-items: center;
         justify-content: space-between;
     }
     
+    .room-header-meta {
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+        align-items: center;
+        justify-content: flex-end;
+        width: auto;
+    }
+    
     .room-user-label {
         display: none; /* Hide 'Logged as...' to save space */
+    }
+
+    .room-admin-btn {
+        display: none !important; /* Hide admin portal link inside meeting room on mobile to save space */
     }
 
     .room-sidebar {
@@ -1164,7 +1170,7 @@ table.admin-table td {
         height: 100%;
         top: 0;
         right: 0;
-        z-index: 1000;
+        z-index: 2500;
         border-left: none;
     }
     
@@ -1173,55 +1179,90 @@ table.admin-table td {
     }
 
     .room-footer {
-        flex-direction: column;
-        padding: 12px;
-        gap: 10px;
-        height: auto;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 8px 12px !important;
+        gap: 10px !important;
+        height: 66px !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        white-space: nowrap !important;
+        -webkit-overflow-scrolling: touch;
     }
 
     .controls-group {
-        width: 100%;
-        justify-content: center;
-        flex-wrap: wrap;
-        gap: 8px;
+        display: inline-flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        width: auto !important;
+        justify-content: center !important;
+        gap: 8px !important;
     }
 
     .control-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 16px;
+        width: 38px;
+        height: 38px;
+        font-size: 15px;
+        flex-shrink: 0;
     }
-    
-    /* Screen share on mobile is generally not supported/needed */
+
+    .btn-text {
+        display: none !important; /* Hide button text labels on mobile */
+    }
+
+    .room-footer .btn {
+        padding: 0;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    /* Screen share on mobile is visible and accessible */
     #screen-btn {
-        display: none;
+        display: flex !important;
     }
 
     /* Video tiles layout for mobile */
     .video-grid-container {
         padding: 10px;
+        overflow-y: auto; /* Allow vertical scroll */
+        -webkit-overflow-scrolling: touch;
+        display: block; /* Required for proper scrolling with grid height */
     }
     
     .video-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 10px;
+        grid-template-columns: 1fr; /* 1 column on mobile portrait */
+        gap: 12px;
         width: 100%;
-        height: 100%;
+        margin: 0 auto;
+        min-height: 100%;
         align-content: center;
+        justify-content: center;
+    }
+    
+    /* Support landscape mode - 2 columns */
+    @media (orientation: landscape) {
+        .video-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+        }
     }
     
     .video-wrapper {
         min-width: unset;
         max-width: unset;
         width: 100%;
-        aspect-ratio: 4/3; /* Better fit for mobile portrait/landscape mix */
+        aspect-ratio: 16/9; /* Maintain 16:9 aspect ratio */
+        margin: 0 auto;
     }
     
     .video-placeholder .avatar {
-        width: 60px;
-        height: 60px;
-        font-size: 24px;
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
     }
 }
 
