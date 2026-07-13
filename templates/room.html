@@ -39,9 +39,9 @@
                 </span>
             </div>
             
-            <div style="display: flex; gap: 15px; align-items: center;">
+            <div class="room-header-meta">
                 {% if user.is_staff %}
-                <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px; border-radius: 8px; gap: 6px;" target="_blank">
+                <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary room-admin-btn" style="padding: 6px 12px; font-size: 12px; border-radius: 8px; gap: 6px;" target="_blank">
                     <i class="fa-solid fa-chart-pie" style="color: var(--accent-warning);"></i> Admin Portal
                 </a>
                 {% endif %}
@@ -49,7 +49,7 @@
                     <i class="fa-solid fa-link"></i>
                     <span>ID: <strong>{{ meeting.meeting_id }}</strong></span>
                 </div>
-                <div style="font-size: 13px; color: var(--text-secondary);">
+                <div class="room-user-label" style="font-size: 13px; color: var(--text-secondary);">
                     Logged as: <strong>{{ user.username }}</strong>
                 </div>
             </div>
@@ -92,6 +92,9 @@
                     <div class="sidebar-tab" id="participants-tab-btn" onclick="toggleSidebarTab('participants')">
                         <i class="fa-solid fa-users"></i> Participants (<span id="participant-count-badge">1</span>)
                     </div>
+                    <button class="room-sidebar-close-btn" onclick="toggleRoomSidebar()">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
 
                 <!-- Chat Panel -->

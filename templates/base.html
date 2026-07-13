@@ -23,12 +23,43 @@
     </div>
 
     {% block body %}
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+        <button class="mobile-menu-btn" id="mobile-menu-btn" onclick="toggleSidebarMenu()" aria-label="Toggle Menu">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="mobile-logo">
+            <i class="fa-solid fa-video" style="color: var(--accent-primary);"></i>
+            <span>vZoom</span>
+        </div>
+        <div class="mobile-profile" onclick="openProfileModal(event)" style="cursor: pointer;">
+            <div class="avatar" style="background-color: {{ request.user.profile.avatar_color }}; width: 32px; height: 32px; font-size: 13px;">
+                {{ request.user.username|slice:":2" }}
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar Backdrop for Mobile -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebarMenu()"></div>
+
     <div class="app-container">
         <!-- Sidebar Navigation -->
-        <aside class="sidebar">
-            <div class="sidebar-logo">
-                <i class="fa-solid fa-video" style="color: var(--accent-primary);"></i>
-                <span>vZoom</span>
+        <aside class="sidebar" id="app-sidebar">
+            <div class="sidebar-header-mobile">
+                <div class="sidebar-logo">
+                    <i class="fa-solid fa-video" style="color: var(--accent-primary);"></i>
+                    <span>vZoom</span>
+                </div>
+                <button class="sidebar-close-btn" onclick="toggleSidebarMenu()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="sidebar-logo-desktop">
+                <div class="sidebar-logo">
+                    <i class="fa-solid fa-video" style="color: var(--accent-primary);"></i>
+                    <span>vZoom</span>
+                </div>
             </div>
             
             <ul class="sidebar-menu">
@@ -137,10 +168,27 @@
             });
         });
 
+        // Toggle Sidebar on mobile
+        function toggleSidebarMenu() {
+            const sidebar = document.getElementById('app-sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (sidebar && backdrop) {
+                sidebar.classList.toggle('active');
+                backdrop.classList.toggle('active');
+            }
+        }
+
         // Profile Modal Actions
         function openProfileModal(e) {
             if (e) e.preventDefault();
             document.getElementById('profile-modal-backdrop').classList.add('active');
+            // Close sidebar on mobile if open
+            const sidebar = document.getElementById('app-sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (sidebar && sidebar.classList.contains('active')) {
+                sidebar.classList.remove('active');
+                backdrop.classList.remove('active');
+            }
         }
 
         function closeProfileModal() {
