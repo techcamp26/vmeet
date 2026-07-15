@@ -32,8 +32,12 @@ application = ProtocolTypeRouter({
 
 
 import os
+import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'zoom_project.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "zoom_project.settings")
+
+# Django apps initialize
+django.setup()
 
 from django.core.asgi import get_asgi_application
 from channels.auth import AuthMiddlewareStack
